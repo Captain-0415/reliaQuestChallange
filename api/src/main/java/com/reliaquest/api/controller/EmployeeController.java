@@ -1,6 +1,7 @@
 package com.reliaquest.api.controller;
 
 import com.reliaquest.api.entity.Employee;
+import com.reliaquest.api.exceptions.ResourceNotFoundException;
 import com.reliaquest.api.service.EmployeeService;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -76,21 +79,35 @@ public class EmployeeController implements IEmployeeController<Employee, Employe
     }
 
     @Override
-    public ResponseEntity<Employee> createEmployee(Employee employeeInput) {
+    public ResponseEntity<Employee> createEmployee(@RequestBody Employee employeeInput) {
         logger.trace("[createEmployee] : Creating employee: {}", employeeInput.getEmployee_name());
         try {
             return ResponseEntity.ok(employeeService.createEmployee(employeeInput));
+        } catch (HttpStatusCodeException e){
+            logger.error("[createEmployee] : Request limit reached.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (Exception e) {
-            logger.error("[createEmployee] : Error creating employee", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error creating employee", e);
+            logger.error("[createEmployee] : Error creating employee : {}", e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error creating employee.");
         }
     }
 
     @Override
     public ResponseEntity<String> deleteEmployeeById(String id) {
         logger.trace("[deleteEmployeeById] : Deleting employee by ID: {}", id);
-        employeeService.deleteEmployeeById(id);
-        logger.info("[deleteEmployeeById] : Employee deleted successfully: {}", id);
-        return ResponseEntity.ok("Employee deleted successfully.");
+        try {
+            employeeService.deleteEmployeeById(id);
+            logger.info("[deleteEmployeeById] : Employee deleted successfully: {}", id);
+            return ResponseEntity.ok("Employee deleted successfully.");
+        } catch (ResourceNotFoundException r) {
+            logger.error("[deleteEmployeeById] : Resource not found with id : {}", id);
+            throw new ResourceNotFoundException("Resource not found with id : "+id);
+        } catch (HttpStatusCodeException e){
+            logger.error("[deleteEmployeeById] : Request limit reached.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        } catch (Exception e){
+            logger.error("[deleteEmployeeById] : Error deleting employee : {}", e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error deleting employee.");
+        }
     }
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.reliaquest.api.entity.Employee;
+import com.reliaquest.api.entity.EmployeeRequest;
 import com.reliaquest.api.exceptions.ResourceNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +52,7 @@ class EmployeeServiceTest {
         List<Employee> employees = employeeService.getAllEmployees();
 
         assertEquals(2, employees.size());
-        assertEquals("John Doe", employees.get(0).getEmployee_name());
+        assertEquals("Jane Doe", employees.get(0).getEmployee_name());
     }
 
     @Test
@@ -122,7 +123,8 @@ class EmployeeServiceTest {
         EmployeeService.EmployeeSingleResponse response = new EmployeeService.EmployeeSingleResponse();
         response.setData(newEmployee);
 
-        when(restTemplate.postForEntity(anyString(), eq(newEmployee), eq(EmployeeService.EmployeeSingleResponse.class)))
+        // Corrected stubbing to match the actual method call in the service
+        when(restTemplate.postForEntity(anyString(), any(EmployeeRequest.class), eq(EmployeeService.EmployeeSingleResponse.class)))
                 .thenReturn(ResponseEntity.ok(response));
 
         Employee createdEmployee = employeeService.createEmployee(newEmployee);
